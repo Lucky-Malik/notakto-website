@@ -84,15 +84,19 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
   useImperativeHandle(ref, () => api, [api])
 
   useEffect(() => {
-    if (!manualstart) {
-      ;(async () => {
-        try {
-          await fire()
-        } catch (error) {
-          console.error("Confetti effect error:", error)
-        }
-      })()
-    }
+    if (manualstart) return
+    const shouldReduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (shouldReduceMotion) return
+
+    ;(async () => {
+      try {
+        await fire()
+      } catch (error) {
+        console.error("Confetti effect error:", error)
+      }
+    })()
   }, [manualstart, fire])
 
   return (
@@ -117,9 +121,12 @@ interface ConfettiButtonProps extends React.ComponentProps<"button"> {
 const ConfettiButtonComponent = ({
   options,
   children,
+  onClick,
   ...props
 }: ConfettiButtonProps) => {
   const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    onClick?.(event)
+    if (event.defaultPrevented) return
     try {
       const rect = event.currentTarget.getBoundingClientRect()
       const x = rect.left + rect.width / 2
@@ -137,7 +144,7 @@ const ConfettiButtonComponent = ({
   }
 
   return (
-    <Button onClick={handleClick} {...props}>
+    <Button {...props} onClick={handleClick}>
       {children}
     </Button>
   )
